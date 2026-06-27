@@ -2,7 +2,7 @@
 #
 #   docker compose up -d        # sobe tudo
 #   docker compose down -v      # derruba e limpa volumes
-#
+#infra
 # Portas úteis:
 #   Kafka UI   → http://localhost:8080
 
