@@ -1,0 +1,62 @@
+# Sobe o broker Kafka + stack de observabilidade (Prometheus, Loki, Tempo, Grafana).
+#
+#   docker compose up -d        # sobe tudo
+#   docker compose down -v      # derruba e limpa volumes
+#
+# Portas úteis:
+#   Kafka UI   → http://localhost:8080
+
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"        # acesso a partir do HOST (as aplicações usam localhost:9092)
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Três listeners: CONTROLLER (interno do KRaft), INTERNAL (entre containers)
+      # e EXTERNAL (host). Isso permite que tanto apps no host quanto a UI no
+      # docker conversem com o broker.
+      KAFKA_LISTENERS: CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # Fatores de replicação = 1 porque é um único broker de desenvolvimento.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: demo-pos
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
+
+  # ─── Serviços da aplicação ────────────────────────────────────────────────
+
+#  order-service:
+#    build:
+#      context: .
+#      dockerfile: order-service/Dockerfile
+#    container_name: order-service
+#    ports:
+#      - "8081:8081"
+#    environment:
+#      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#  notification-service:
+#    build:
+#      context: .
+#      dockerfile: notification-service/Dockerfile
+#    container_name: notification-service
+#    ports:
+#      - "8082:8082"
+#    environment:
+#      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
