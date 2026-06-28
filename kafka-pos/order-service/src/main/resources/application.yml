@@ -11,7 +11,10 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       # Serializa o evento (POJO) para JSON automaticamente.
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      # Spring Boot 4 usa Jackson 3 (tools.jackson). O JsonSerializer clássico
+      # depende de Jackson 2 (com.fasterxml.jackson), que NÃO está no classpath
+      # — use o JacksonJsonSerializer (Jackson 3) do spring-kafka 4.
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
       # acks=all: o broker só confirma após replicar nas réplicas in-sync.
       # Máxima durabilidade — nenhuma mensagem confirmada é perdida.
       acks: all
